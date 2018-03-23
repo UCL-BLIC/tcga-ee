@@ -10,6 +10,13 @@ Shiny app to explore the expression data from TCGA.
 
 This app loads the TCGA expression data in memory and allows the user to explore them. At the moment, the only functionality implemented is to look at the expression of the tumour and normal paired samples.
 
+## Installation
+
+1. Clone the repository on your local machine and open the code with RStudio.
+2. Create a data/ folder
+3. Download the data following the instruction below
+4. Open the Shiny/app.R file and click on "Run App".
+
 ## Data
 
 Data need to be downloaded from the [UCSC Xena browser](http://xena.ucsc.edu). Please download all these files into a folder call data.
