@@ -38,25 +38,27 @@ read_data <- function(session, data.dir) {
     }
     rownames(data) <- data[, 1]
     data <- data[, -1]
-    print(paste(this.cohort_name, paste(unique(sub("TCGA-..-....-", "", colnames(data))), collapse = " ")))
+
+    # print(paste(this.cohort_name, paste(unique(sub("TCGA-..-....-", "", colnames(data))), collapse = " ")))
     
-    ## Split into T and N samples
-    data.T <- data[, grepl(".01A$", colnames(data), perl = T), drop = F]
-    data.N <- data[, grepl(".11A$", colnames(data), perl = T), drop = F]
+    ## Sample type codes are defined here: https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/sample-type-codes
     
-    ## Rename samples to keep the Patient ID only
-    colnames(data.T) <- sub(".01A$", "", colnames(data.T), perl = T)
-    colnames(data.N) <- sub(".11A$", "", colnames(data.N), perl = T)
+    ## Split into T and N samples (only solid tumours and only primaries)
+    data.T <- data[, grepl("-01\\w$", colnames(data), perl = T), drop = F]
+    data.N <- data[, grepl("-11\\w$", colnames(data), perl = T), drop = F]
     
-    ## Subset to matching columns (i.e. Patient) only
-    matching.cols <- colnames(data.N)[which(colnames(data.N) %in% colnames(data.T))]
-    data.N <- data.N[, matching.cols, drop = F]
-    data.T <- data.T[, matching.cols, drop = F]
+    ## Subset to matching columns (i.e. Case) only
+    cases <- intersect(sub("-\\d\\d\\w$", "", colnames(data.N), perl = T),
+                          sub("-\\d\\d\\w$", "", colnames(data.T), perl = T))
+    data.N <- data.N[, which(sub("-\\d\\d\\w$", "", colnames(data.N)) %in% cases), drop = F]
+    data.T <- data.T[, which(sub("-\\d\\d\\w$", "", colnames(data.T)) %in% cases), drop = F]
+
+    these.cohorts[[this.cohort_name]]$cases <- cases
     
     these.cohorts[[this.cohort_name]]$data.T <- data.T
     these.cohorts[[this.cohort_name]]$data.N <- data.N
     
-    these.cohorts[[this.cohort_name]]$label <- paste0(this.cohort_name, " (", length(matching.cols),")")
+    these.cohorts[[this.cohort_name]]$label <- paste0(this.cohort_name, " (", length(cases),")")
   }
   cohorts <<- these.cohorts
   return(cohorts)
@@ -82,7 +84,7 @@ ui <- navbarPage(
 
       sidebarPanel(
         selectInput("cohort",
-                    "Cohort",
+                    "Cohort (num of matching T-N)",
                     choices = "Loading...",
                     # selected = ,
                     multiple = F,
@@ -189,21 +191,21 @@ server <- function(input, output, session) {
 
     if (!(cohort_name %in% names(cohorts))) {
       data <- data.frame(matrix(NA, ncol = 4, nrow = 0))
-      colnames(data) <- c("Patient", "Normal", "Tumour", "diff")
+      colnames(data) <- c("Case", "Normal", "Tumour", "diff")
       return(data)
     }
     data.T <- cohorts[[cohort_name]]$data.T[gene, , drop = F]
     data.N <- cohorts[[cohort_name]]$data.N[gene, , drop = F]
     if (ncol(data.T) == 0) {
       data <- data.frame(matrix(NA, ncol = 4, nrow = 0))
-      colnames(data) <- c("Patient", "Normal", "Tumour", "diff")
+      colnames(data) <- c("Case", "Normal", "Tumour", "diff")
       return(data)
     }
-    data <- inner_join(
-      gather(data.N, key = "Patient", value = "Normal"),
-      gather(data.T, key = "Patient", value = "Tumour"), 
-      by = "Patient"
-    )
+    data.N <- gather(data.N, key = "Case", value = "Normal")
+    data.T <- gather(data.T, key = "Case", value = "Tumour")
+    data.N$Case <- sub("-\\d\\d\\w$", "", data.N$Case)
+    data.T$Case <- sub("-\\d\\d\\w$", "", data.T$Case)
+    data <- inner_join(data.N, data.T, by = "Case")
     data$diff <- data$Tumour - data$Normal
     
     return(data)
@@ -223,10 +225,12 @@ server <- function(input, output, session) {
     }
     limits <- max(abs(range(data$diff)))
     limits <- c(-limits, limits)
-    
-    data <- gather(data, key = "Sample", value = "FPKM-UQ", -c("Patient", "diff"))
 
-    ggplot(data = data, aes(x = `Sample`, y = `FPKM-UQ`, group = Patient, color = diff)) +
+    ## id column is to sort out cases with more than one sample
+    data$id <- 1:nrow(data)
+    data <- gather(data, key = "Sample", value = "FPKM-UQ", -c("Case", "diff", "id"))
+
+    ggplot(data = data, aes(x = `Sample`, y = `FPKM-UQ`, group = id, color = diff)) +
       geom_path(lineend = "round") + 
       geom_point(size = input$pointsize) +
       scale_color_gradientn(colors = c("blue", "darkblue", "black", "darkred", "red"),
