@@ -282,6 +282,7 @@ server <- function(input, output, session) {
       geom_density(aes(x = `diff`), color = "black", fill = "lightblue") +
       geom_vline(linetype = 1, color = "black", xintercept = 0) +
       geom_vline(linetype = 2, color = "blue", xintercept = mean(data$diff)) +
+      coord_cartesian(xlim = c(-max(abs(data$diff)), max(abs(data$diff)))) + 
       theme_linedraw() +
       labs(title = paste(input$gene, "in", input$cohort),
            x = "Tumour - Normal (FPKM-UQ)")
