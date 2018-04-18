@@ -5,6 +5,7 @@ Shiny app to explore the expression data from TCGA.
 ## Functionality
 
 - [x] Explore paired Normal-Tumour expression data
+- [x] Conduct correlation between 2 genes within the same tumour
 
 ## Description
 
