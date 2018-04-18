@@ -18,14 +18,7 @@ library(tidyr)
 # Initialise variables
   data.dir <- "../data/"
   cohorts <- NULL
-
-  #######################
-  # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-  #######################
   cohorts.TumourOnly <- NULL
-  #######################
-  # END CODE BLOCK
-  #######################
 
   # Read in the ensembl to HUGO mapping
   genes <- fread(paste0("gunzip -c ", data.dir, "gencode.v22.annotation.gene.probeMap.gz"), header = T, data.table = T)
@@ -38,14 +31,7 @@ library(tidyr)
 read_data <- function(session, data.dir)
 {
   these.cohorts <- list()
-
-  #######################
-  # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-  #######################
   these.cohorts.TumourOnly <- list()
-  #######################
-  # END CODE BLOCK
-  #######################
 
   # Progress bar on bottom-right
   progress <- Progress$new(session, min = 0, max = length(files))
@@ -72,7 +58,7 @@ read_data <- function(session, data.dir)
     rownames(data) <- data[, 1]
     data <- data[, -1]
 
-    # Subset to matching columns (i.e. tumour-normal based on case ID)
+    # Subset to matching columns (i.e. tumour-normal based on case ID) (unique number of cases reported in parentheses after cohort name)
     data.T <- data[, grepl("-01\\w$", colnames(data), perl = T), drop = F]
     data.N <- data[, grepl("-11\\w$", colnames(data), perl = T), drop = F]
     cases <- intersect(sub("-\\d\\d\\w$", "", colnames(data.N), perl = T),
@@ -82,27 +68,20 @@ read_data <- function(session, data.dir)
     these.cohorts[[this.cohort_name]]$cases <- cases
     these.cohorts[[this.cohort_name]]$data.T <- data.T
     these.cohorts[[this.cohort_name]]$data.N <- data.N
-    these.cohorts[[this.cohort_name]]$label <- paste0(this.cohort_name, " (", length(cases[!duplicated(cases)]),")")
+    these.cohorts[[this.cohort_name]]$label <- paste0(this.cohort_name, " (", length(cases[!duplicated(gsub("-01\\w$", "", cases))]),")")
 
-  #######################
-  # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-  #######################
-    # Subset to select all tumour only
+    # Subset to select all tumour only (unique number of cases reported in parentheses after cohort name)
     data.TumourOnly <- data[, grepl("-01\\w$", colnames(data), perl = T), drop = F]
     cases.TumourOnly <- colnames(data.TumourOnly)
     these.cohorts.TumourOnly[[this.cohort_name]]$cases <- cases.TumourOnly
     these.cohorts.TumourOnly[[this.cohort_name]]$data.T <- data.TumourOnly
-    these.cohorts.TumourOnly[[this.cohort_name]]$label <- paste0(this.cohort_name, " (", length(cases.TumourOnly[!duplicated(cases.TumourOnly)]),")")
-cases
+    these.cohorts.TumourOnly[[this.cohort_name]]$label <- paste0(this.cohort_name, " (", length(cases.TumourOnly[!duplicated(gsub("-01\\w$", "", cases.TumourOnly))]),")")
   }
 
   cohorts <<- these.cohorts
   cohorts.TumourOnly <<- these.cohorts.TumourOnly
 
   return(list(cohorts, cohorts.TumourOnly))
-  #######################
-  # END CODE BLOCK
-  #######################
 }
 
 # Function for displaying error messgaes in a ggplot2 environment
@@ -159,9 +138,6 @@ ui <- navbarPage(
                             h3("Matched tumour-normal TCGA RNA-seq FPKM-UQ data"),
                             DT::dataTableOutput("TN.dataTable")))),
 
-  #######################
-  # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-  #######################
   # New tab: correlation analysis
   tabPanel("Tumour correlation analysis",
           sidebarLayout(
@@ -201,9 +177,6 @@ ui <- navbarPage(
                                 column(4, wellPanel(htmlOutput("TT.cortest")))),
                       h3("Tumour TCGA RNA-seq FPKM-UQ data"),
                       DT::dataTableOutput("TT.dataTable")))),
-  #######################
-  # END CODE BLOCK
-  #######################
 
   # New panel with information about the application
   tabPanel("About",
@@ -250,9 +223,6 @@ ui <- navbarPage(
 # Define server logic
 server <- function(input, output, session)
 {
-  #######################
-  # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-  #######################
   # If there are no datasets populated (this will be the first task to be executed when app is started)
   if (is.null(cohorts) || is.null(cohorts.TumourOnly))
   {
@@ -275,9 +245,6 @@ server <- function(input, output, session)
     updateSelectInput(session, "cohort.TumourOnly", "Cohort", 
                       choices = cohort_choices.TumourOnly,
                       selected = cohort_choices.TumourOnly[grep("(0)", names(cohort_choices.TumourOnly), value = F, invert = T)[1]])
-  #######################
-  # END CODE BLOCK
-  ####################### 
   }
 
   # Function that will be called for reading in the matched T-N data when a cohort and gene is selected from "Matched tumour vs normal" panel
@@ -314,21 +281,12 @@ server <- function(input, output, session)
     data <- inner_join(data.N, data.T, by = "Case")
     data$diff <- data$Tumour - data$Normal
 
-    #######################
-    # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-    #######################
     # Remove duplicated samples
     data <- data[!duplicated(data$Case),]
-    #######################
-    # END CODE BLOCK
-    #######################
 
     return(data)
   })
 
-  #######################
-  # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-  #######################
   # Function that will be called for reading in the tumour data when a cohort and 2 genes are selected from "Tumour correlation analysis" panel
   TT.data <- reactive(
   {
@@ -370,9 +328,6 @@ server <- function(input, output, session)
 
     return(data)
   })
-  #######################
-  # END CODE BLOCK
-  #######################  
 
   # Function for generating the parallel / bi-partite plot for "Matched tumour vs normal" panel
   output$TN.parallel <- renderPlot(
@@ -472,9 +427,6 @@ server <- function(input, output, session)
   {
     data <- TN.data()
 
-    #######################
-    # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-    #######################
     # Convert zeros to NAs - these will be later removed
     data$Tumour[data$Tumour==0] <- NA
     data$Normal[data$Normal==0] <- NA
@@ -486,11 +438,8 @@ server <- function(input, output, session)
     }
     else
     {
-      # Student's t-test (parametric)
+      # Paired student's t-test (parametric)
       t <- t.test(data$diff)
-
-      # Mann-Whitney u-test (non-parametric)
-      mw <- wilcox.test(data$Tumour, data$Normal, paired=FALSE, exact=FALSE, conf.int=TRUE, conf.level=0.95)
 
       # Wilcoxon Signed Rank test (non-parametric)
       wt <- wilcox.test(data$Tumour, data$Normal, paired=TRUE, exact=FALSE, conf.int=TRUE, conf.level=0.95)
@@ -499,9 +448,6 @@ server <- function(input, output, session)
       n.complete.obs <- nrow(data[complete.cases(data$Tumour, data$Normal),])
 
       options(scipen=999)
-      #######################
-      # END CODE BLOCK
-      #######################
 
       out <- c("<p align='left'><b>One-sample student's t-test</b></p>\n",
               "<p><i>Is mean difference not equal to 0?</i></p>\n",
@@ -509,14 +455,6 @@ server <- function(input, output, session)
               paste0("<p>&nbsp;&nbsp;&nbsp;95% CI: ", round(t$conf.int[1], 3), ", ", round(t$conf.int[2], 3), "</p>\n"),
               paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(t$p.value, 3), "</p>\n"))
 
-      #######################
-      # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-      #######################
-      out <- c(out, "<p><hr></p>\n")
-      out <- c(out, "<p align='left'><b>Mann-Whitney U test</b></p>\n",
-               paste0("<p>&nbsp;&nbsp;&nbsp;Estimated location parameter: ", round(mw$estimate, 3), "</p>\n"),
-               paste0("<p>&nbsp;&nbsp;&nbsp;95% CI: ", round(mw$conf.int[1], 3), ", ", round(mw$conf.int[2], 3), "</p>\n"),
-               paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(mw$p.value, 3), "</p>\n"))
       out <- c(out, "<p><hr></p>\n")
       out <- c(out, "<p align='left'><b>Wilcoxon signed rank test</b></p>\n",
                paste0("<p>&nbsp;&nbsp;&nbsp;Estimated location parameter: ", round(wt$estimate, 3), "</p>\n"),
@@ -528,21 +466,10 @@ server <- function(input, output, session)
       out <- c(out, "<p><b>Notes on statistical testing:</b></p>",
                "<ul><li>observations with a zero not included</li>",
                "<li>minimum 3 complete observations required</li></ul>")
-      #######################
-      # END CODE BLOCK
-      #######################
     }
   })
 
-  # Used in neither v1.0 nor v1.1
-  # output$TN.ttest2 <- renderPrint(
-  # {
-  #   data <- TN.data()
-  #   if (nrow(data) > 0) {
-  #     t.test(data$diff)
-  #   }
-  # })
-
+  # Function for outputting the expression values as a table in the main panel for "Matched tumour vs normal" panel
   output$TN.dataTable <- renderDataTable(
   {
     datatable(TN.data(),
@@ -550,27 +477,30 @@ server <- function(input, output, session)
               options = list(dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print')))
   })
 
-  #######################
-  # BEGIN CODE BLOCK - added in v1.1, 11-18 April 2018
-  #######################
+  # Function for outputting the expression values as a table in the main panel for "Tumour correlation analysis" panel
   output$TT.dataTable <- renderDataTable(
   {
     datatable(TT.data(),
               extensions = c('Buttons'),
+              colnames=c("Case", input$gene1, input$gene2, "Diff"),
               options = list(dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print')))
   })
 
+  # Function to generate the scatter plot for correlation analysis, with linear regression fit ("Tumour correlation analysis" panel)
   output$TT.scatter.cor <- renderPlot(
   {
     cohort_name.TumourOnly <- input$cohort.TumourOnly
+
     gene1 <- as.character(genes[genes$gene == input$gene1, 1])
     gene2 <- as.character(genes[genes$gene == input$gene2, 1])
 
     data <- TT.data()
 
+    # Convert zeros to NAs - as NA values, ggplot2 will automatically remove them (and report as a warning message)
     data$Gene1[data$Gene1==0] <- NA
     data$Gene2[data$Gene2==0] <- NA
 
+    # Check for complete cases, i.e., where both gene1 and gene2 have values
     if (nrow(data[complete.cases(data$Gene1, data$Gene2),])==0)
     {
       return(gg_message(paste("No complete cases for chosen genes in", input$cohort.TumourOnly)))
@@ -588,27 +518,36 @@ server <- function(input, output, session)
     }
   })
 
+  # Function to display correlation results in the "Tumour correlation analysis" panel
   output$TT.cortest <- renderText(
   {
     data <- TT.data()
 
+    # Convert zeros to NAs - these will be later removed
     data$Gene1[data$Gene1==0] <- NA
     data$Gene2[data$Gene2==0] <- NA
 
+    # Check for complete matched cases, i.e., where both T-N have values, and require at least 3 of these
     if (nrow(data[complete.cases(data$Gene1, data$Gene2),])<3)
     {
       out <- c("<p align='left'>Error - not enough complete observations</p>\n")
     }
     else
     {
-      n.complete.obs <- nrow(data[complete.cases(data$Gene1, data$Gene2),])
-
+      # Pearson r correlation
       r.p <- cor(data$Gene1, data$Gene2, method="pearson", use="complete.obs")
       p.p <- cor.test(data$Gene1, data$Gene2, method="pearson", use="complete.obs")
+
+      # Spearman rho correlation
       r.sp <- cor(data$Gene1, data$Gene2, method="spearman", use="complete.obs")
       p.sp <- cor.test(data$Gene1, data$Gene2, method="spearman", use="complete.obs", exact=FALSE)
+
+      # Kendall tau correlation
       r.k <- cor(data$Gene1, data$Gene2, method="kendall", use="complete.obs")
       p.k <- cor.test(data$Gene1, data$Gene2, method="kendall", use="complete.obs", exact=FALSE)
+
+      # Record the number of complete cases
+      n.complete.obs <- nrow(data[complete.cases(data$Gene1, data$Gene2),])
 
       options(scipen=999)
       
@@ -630,9 +569,6 @@ server <- function(input, output, session)
               "<li>minimum 3 complete observations required</li></ul>")
     }
   })
-  #######################
-  # END CODE BLOCK
-  #######################
 }
 
 # Run the application 
