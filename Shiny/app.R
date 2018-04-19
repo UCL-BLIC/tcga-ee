@@ -21,7 +21,13 @@ library(tidyr)
   cohorts.TumourOnly <- NULL
 
   # Read in the ensembl to HUGO mapping
-  genes <- fread(paste0("gunzip -c ", data.dir, "gencode.v22.annotation.gene.probeMap.gz"), header = T, data.table = T)
+  if (file.exists(paste0(data.dir, "gencode.v22.annotation.gene.probeMap"))) {
+    genes <- fread(paste0(data.dir, "gencode.v22.annotation.gene.probeMap"), header = T, data.table = T)
+  } else if (file.exists(paste0(data.dir, "gencode.v22.annotation.gene.probeMap.gz"))) {
+    genes <- fread(paste0("gunzip -c ", data.dir, "gencode.v22.annotation.gene.probeMap.gz"), header = T, data.table = T)
+  } else {
+    stop("Cannot find gencode annotation file")
+  }
 
   # Obtain the list of files containing the FPKM-UQ data
   files <- list.files(data.dir, pattern = ".htseq_fpkm-uq")
