@@ -21,12 +21,13 @@ library(tidyr)
   cohorts.TumourOnly <- NULL
 
   # Read in the ensembl to HUGO mapping
-  if (file.exists(paste0(data.dir, "gencode.v22.annotation.gene.probeMap.gz")))
-  {
-    genes <- fread(paste0("gunzip -c ", data.dir, "gencode.v22.annotation.gene.probeMap.gz"), header = T, data.table = T)
-  } else
+  if (file.exists(paste0(data.dir, "gencode.v22.annotation.gene.probeMap")))
   {
     genes <- fread(paste0(data.dir, "gencode.v22.annotation.gene.probeMap"), header = T, data.table = T)
+  } else if (file.exists(paste0(data.dir, "gencode.v22.annotation.gene.probeMap.gz"))) {
+    genes <- fread(paste0("gunzip -c ", data.dir, "gencode.v22.annotation.gene.probeMap.gz"), header = T, data.table = T)
+  } else {
+    stop("Cannot find gencode annotation file")
   }
 
   # Obtain the list of files containing the FPKM-UQ data
@@ -136,11 +137,17 @@ ui <- navbarPage(
                   mainPanel(
                             fluidRow(column(8, tabsetPanel(type = "tabs",
                                                           tabPanel("Parallel Coordinate Plot",
-                                                                  plotOutput("TN.parallel", height = "400px", width = "400px")),
+                                                                  plotOutput("TN.parallel", height = "400px", width = "400px"),
+                                                                  radioButtons(inputId="saveFormatTN.parallel", label="Format", choices=list("png", "pdf")),
+                                                                  downloadButton(outputId="exportImageTN.parallel", label="Export image")),
                                                           tabPanel("Scatter Plot",
-                                                                  plotOutput("TN.scatter", height = "400px", width = "400px")),
+                                                                  plotOutput("TN.scatter", height = "400px", width = "400px"),
+                                                                  radioButtons(inputId="saveFormatTN.scatter", label="Format", choices=list("png", "pdf")),
+                                                                  downloadButton("exportImageTN.scatter", label="Export image")),
                                                           tabPanel("Density Plot",
-                                                                  plotOutput("TN.density", height = "400px", width = "400px")))),
+                                                                  plotOutput("TN.density", height = "400px", width = "400px"),
+                                                                  radioButtons(inputId="saveFormatTN.density", label="Format", choices=list("png", "pdf")),
+                                                                  downloadButton(outputId="exportImageTN.density", label="Export image")))),
                                     column(4, wellPanel(htmlOutput("TN.ttest")))),
                             h3("Matched tumour-normal TCGA RNA-seq FPKM-UQ data"),
                             DT::dataTableOutput("TN.dataTable")))),
@@ -180,7 +187,9 @@ ui <- navbarPage(
                       mainPanel(
                                 fluidRow(column(8, tabsetPanel(type = "tabs",
                                                               tabPanel("Scatter Correlation Plot",
-                                                                      plotOutput("TT.scatter.cor", height = "400px", width = "400px")))),
+                                                                      plotOutput("TT.scatter.cor", height = "400px", width = "400px"),
+                                                                      radioButtons(inputId="saveFormatTT.scatter.cor", label="Format", choices=list("png", "pdf")),
+                                                                      downloadButton(outputId="exportImageTT.scatter.cor", label="Export image")))),
                                 column(4, wellPanel(htmlOutput("TT.cortest")))),
                       h3("Tumour TCGA RNA-seq FPKM-UQ data"),
                       DT::dataTableOutput("TT.dataTable")))),
@@ -337,7 +346,8 @@ server <- function(input, output, session)
   })
 
   # Function for generating the parallel / bi-partite plot for "Matched tumour vs normal" panel
-  output$TN.parallel <- renderPlot(
+  output$TN.parallel <- renderPlot(plotTN.parallel())
+  plotTN.parallel <- function()
   {
     cohort_name <- input$cohort
     gene <- as.character(genes[genes$gene == input$gene, 1])
@@ -365,15 +375,16 @@ server <- function(input, output, session)
       geom_path(lineend = "round") + 
       geom_point(size = input$pointsize) +
       scale_color_gradientn(colors = c("blue", "darkblue", "black", "darkred", "red"),
-                            values = c(0, 0.4, 0.5, 0.6, 1),
-                            limits = limits,
+                           values = c(0, 0.4, 0.5, 0.6, 1),
+                           limits = limits,
                             guide = F) +
       theme_linedraw() +
       labs(title = paste(input$gene, "in", input$cohort))
-  })
+  }
 
   # Function for generating the scatter plot for "Matched tumour vs normal" panel
-  output$TN.scatter <- renderPlot(
+  output$TN.scatter <- renderPlot(plotTN.scatter())
+  plotTN.scatter <- function()
   {
     cohort_name <- input$cohort
     gene <- as.character(genes[genes$gene == input$gene, 1])
@@ -402,12 +413,12 @@ server <- function(input, output, session)
                             limits = limits,
                             guide = F) +
       theme_linedraw() +
-      labs(title = paste(input$gene, "in", input$cohort),
-           x = "Normal (FPKM-UQ)", y = "Tumour (FPKM-UQ)")
-  })
+      labs(title = paste(input$gene, "in", input$cohort), x="Normal (FPKM-UQ)", y="Tumour (FPKM-UQ)")
+  }
 
   # Function for generating the density plot for "Matched tumour vs normal" panel
-  output$TN.density <- renderPlot(
+  output$TN.density <- renderPlot(plotTN.density())
+  plotTN.density <- function()
   {
     cohort_name <- input$cohort
     gene <- as.character(genes[genes$gene == input$gene, 1])
@@ -425,9 +436,8 @@ server <- function(input, output, session)
       geom_vline(linetype = 2, color = "blue", xintercept = mean(data$diff)) +
       coord_cartesian(xlim = c(-max(abs(data$diff)), max(abs(data$diff)))) + 
       theme_linedraw() +
-      labs(title = paste(input$gene, "in", input$cohort),
-           x = "Matched tumour - normal\n(FPKM-UQ)")
-  })
+      labs(title = paste(input$gene, "in", input$cohort), x="Matched tumour - normal\n(FPKM-UQ)")
+  }
 
   # Function for generating the scatter plot for "Matched tumour vs normal" panel
   output$TN.ttest <- renderText(
@@ -451,6 +461,10 @@ server <- function(input, output, session)
       # Wilcoxon Signed Rank test (non-parametric)
       wt <- wilcox.test(data$Tumour, data$Normal, paired=TRUE, exact=FALSE, conf.int=TRUE, conf.level=0.95)
 
+      # Calculate log base 2 fold change differences
+      log2fc.median <- median(data$Tumour / data$Normal, na.rm=TRUE)
+      log2fc.mean <- mean(data$Tumour / data$Normal, na.rm=TRUE)
+
       # Record the number of complete cases
       n.complete.obs <- nrow(data[complete.cases(data$Tumour, data$Normal),])
 
@@ -461,12 +475,15 @@ server <- function(input, output, session)
               paste0("<p>&nbsp;&nbsp;&nbsp;Estimated mean: ", round(t$estimate, 3), "</p>\n"),
               paste0("<p>&nbsp;&nbsp;&nbsp;95% CI: ", round(t$conf.int[1], 3), ", ", round(t$conf.int[2], 3), "</p>\n"),
               paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(t$p.value, 3), "</p>\n"))
-
       out <- c(out, "<p><hr></p>\n")
       out <- c(out, "<p align='left'><b>Wilcoxon signed rank test</b></p>\n",
                paste0("<p>&nbsp;&nbsp;&nbsp;Estimated location parameter: ", round(wt$estimate, 3), "</p>\n"),
                paste0("<p>&nbsp;&nbsp;&nbsp;95% CI: ", round(wt$conf.int[1], 3), ", ", round(wt$conf.int[2], 3), "</p>\n"),
                paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(wt$p.value, 3), "</p>\n"))
+      out <- c(out, "<p><hr></p>\n")
+      out <- c(out, "<p align='left'><b>Fold change difference</b></p>\n",
+               paste0("<p>&nbsp;&nbsp;&nbsp;", "Log2 ", "fold-change (median): ", round(log2fc.median, 3), "</p>\n"),
+               paste0("<p>&nbsp;&nbsp;&nbsp;", "Log2 ", "fold-change (mean): ", round(log2fc.mean, 3), "</p>\n"))
       out <- c(out, "<p><hr></p>\n")
       out <- c(out, paste0("<p>Number of complete non-zero observatons = ", n.complete.obs, "</p>\n"))
       out <- c(out, "<p>----------------------</p>")
@@ -494,7 +511,8 @@ server <- function(input, output, session)
   })
 
   # Function to generate the scatter plot for correlation analysis, with linear regression fit ("Tumour correlation analysis" panel)
-  output$TT.scatter.cor <- renderPlot(
+  output$TT.scatter.cor <- renderPlot(plotTT.scatter.cor())
+  plotTT.scatter.cor <- function()
   {
     cohort_name.TumourOnly <- input$cohort.TumourOnly
 
@@ -523,7 +541,7 @@ server <- function(input, output, session)
               x = paste("Gene1 (", input$gene1, ")\n(FPKM-UQ)", sep=""),
               y = paste("Gene2 (", input$gene2, ")\n(FPKM-UQ)", sep=""))
     }
-  })
+  }
 
   # Function to display correlation results in the "Tumour correlation analysis" panel
   output$TT.cortest <- renderText(
@@ -576,6 +594,56 @@ server <- function(input, output, session)
               "<li>minimum 3 complete observations required</li></ul>")
     }
   })
+
+  # Create handlers for saving the plots
+  output$exportImageTN.parallel <- downloadHandler(filename=function(){paste("Parallel", input$saveFormatTN.parallel, sep=".")},
+                                                  content=function(file)
+                                                  {
+                                                    if (input$saveFormatTN.parallel=="pdf")
+                                                    {
+                                                      ggsave(file, plot=plotTN.parallel(), device="pdf")
+                                                    }
+                                                    else if (input$saveFormatTN.parallel=="png")
+                                                    {
+                                                      ggsave(file, plot=plotTN.parallel(), device="png")
+                                                    }
+                                                  })
+  output$exportImageTN.scatter <- downloadHandler(filename=function(){paste("Scatter", input$saveFormatTN.scatter, sep=".")},
+                                                   content=function(file)
+                                                   {
+                                                     if (input$saveFormatTN.scatter=="pdf")
+                                                     {
+                                                       ggsave(file, plot=plotTN.scatter(), device="pdf")
+                                                     }
+                                                     else if (input$saveFormatTN.scatter=="png")
+                                                     {
+                                                       ggsave(file, plot=plotTN.scatter(), device="png")
+                                                     }
+                                                   })
+  output$exportImageTN.density <- downloadHandler(filename=function(){paste("Density", input$saveFormatTN.density, sep=".")},
+                                                   content=function(file)
+                                                   {
+                                                     if (input$saveFormatTN.density=="pdf")
+                                                     {
+                                                       ggsave(file, plot=plotTN.density(), device="pdf")
+                                                     }
+                                                     else if (input$saveFormatTN.density=="png")
+                                                     {
+                                                       ggsave(file, plot=plotTN.density(), device="png")
+                                                     }
+                                                   })
+  output$exportImageTT.scatter.cor <- downloadHandler(filename=function(){paste("Correlation", input$saveFormatTT.scatter.cor, sep=".")},
+                                                   content=function(file)
+                                                   {
+                                                     if (input$saveFormatTT.scatter.cor=="pdf")
+                                                     {
+                                                       ggsave(file, plot=plotTT.scatter.cor(), device="pdf")
+                                                     }
+                                                     else if (input$saveFormatTT.scatter.cor=="png")
+                                                     {
+                                                       ggsave(file, plot=plotTT.scatter.cor(), device="png")
+                                                     }
+                                                   })
 }
 
 # Run the application 
