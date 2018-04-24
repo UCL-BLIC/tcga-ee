@@ -21,7 +21,13 @@ library(tidyr)
   cohorts.TumourOnly <- NULL
 
   # Read in the ensembl to HUGO mapping
-  genes <- fread(paste0("gunzip -c ", data.dir, "gencode.v22.annotation.gene.probeMap.gz"), header = T, data.table = T)
+  if (file.exists(paste0(data.dir, "gencode.v22.annotation.gene.probeMap.gz")))
+  {
+    genes <- fread(paste0("gunzip -c ", data.dir, "gencode.v22.annotation.gene.probeMap.gz"), header = T, data.table = T)
+  } else
+  {
+    genes <- fread(paste0(data.dir, "gencode.v22.annotation.gene.probeMap"), header = T, data.table = T)
+  }
 
   # Obtain the list of files containing the FPKM-UQ data
   files <- list.files(data.dir, pattern = ".htseq_fpkm-uq")
@@ -47,6 +53,7 @@ read_data <- function(session, data.dir)
     progress$set(value = i, message = paste0('Loading ', this.cohort_name, '...'))
     these.cohorts[[this.cohort_name]]$file <- this.file
 
+    # Check if the compressed (g-zipped) version of the file is there for reading; if not, assume uncompressed as TSV
     if (grepl(".gz$", this.file, perl = T))
     {
       data <- fread(paste0("gunzip -c ", data.dir, "/", this.file), header = T, data.table = F)
