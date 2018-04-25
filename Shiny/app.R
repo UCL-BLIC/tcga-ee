@@ -461,10 +461,6 @@ server <- function(input, output, session)
       # Wilcoxon Signed Rank test (non-parametric)
       wt <- wilcox.test(data$Tumour, data$Normal, paired=TRUE, exact=FALSE, conf.int=TRUE, conf.level=0.95)
 
-      # Calculate log base 2 fold change differences
-      log2fc.median <- median(data$Tumour / data$Normal, na.rm=TRUE)
-      log2fc.mean <- mean(data$Tumour / data$Normal, na.rm=TRUE)
-
       # Record the number of complete cases
       n.complete.obs <- nrow(data[complete.cases(data$Tumour, data$Normal),])
 
@@ -480,10 +476,6 @@ server <- function(input, output, session)
                paste0("<p>&nbsp;&nbsp;&nbsp;Estimated location parameter: ", round(wt$estimate, 3), "</p>\n"),
                paste0("<p>&nbsp;&nbsp;&nbsp;95% CI: ", round(wt$conf.int[1], 3), ", ", round(wt$conf.int[2], 3), "</p>\n"),
                paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(wt$p.value, 3), "</p>\n"))
-      out <- c(out, "<p><hr></p>\n")
-      out <- c(out, "<p align='left'><b>Fold change difference</b></p>\n",
-               paste0("<p>&nbsp;&nbsp;&nbsp;", "Log2 ", "fold-change (median): ", round(log2fc.median, 3), "</p>\n"),
-               paste0("<p>&nbsp;&nbsp;&nbsp;", "Log2 ", "fold-change (mean): ", round(log2fc.mean, 3), "</p>\n"))
       out <- c(out, "<p><hr></p>\n")
       out <- c(out, paste0("<p>Number of complete non-zero observatons = ", n.complete.obs, "</p>\n"))
       out <- c(out, "<p>----------------------</p>")
@@ -601,11 +593,11 @@ server <- function(input, output, session)
                                                   {
                                                     if (input$saveFormatTN.parallel=="pdf")
                                                     {
-                                                      ggsave(file, plot=plotTN.parallel(), device="pdf")
+                                                      ggsave(file, plot=plotTN.parallel())
                                                     }
                                                     else if (input$saveFormatTN.parallel=="png")
                                                     {
-                                                      ggsave(file, plot=plotTN.parallel(), device="png")
+                                                      ggsave(file, plot=plotTN.parallel())
                                                     }
                                                   })
   output$exportImageTN.scatter <- downloadHandler(filename=function(){paste("Scatter", input$saveFormatTN.scatter, sep=".")},
