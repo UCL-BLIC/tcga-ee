@@ -100,6 +100,20 @@ gg_message <- function(message)
     theme_void()
 }
 
+# Define a new download button that over-rides the previous downloadButton()
+# Sole modification is target="_blank" to target=NA
+downloadButtonKB <- function (outputId, label = "Download", class = NULL, ...) 
+{
+  aTag <- tags$a(id = outputId,
+                 class = paste("btn btn-default shiny-download-link", class),
+                 href = "",
+                 target = NA,
+                 download = NA,
+                 icon("download"),
+                 label,
+                 ...)
+}
+
 # Define the UI (universal interface) for the application
 ui <- navbarPage(
   title = "TCGA Expression Explorer (TCGA-EE)",
@@ -139,15 +153,15 @@ ui <- navbarPage(
                                                           tabPanel("Parallel Coordinate Plot",
                                                                   plotOutput("TN.parallel", height = "400px", width = "400px"),
                                                                   radioButtons(inputId="saveFormatTN.parallel", label="Format", choices=list("png", "pdf")),
-                                                                  downloadButton(outputId="exportImageTN.parallel", label="Export image")),
+                                                                  downloadButtonKB(outputId="exportImageTN.parallel", label="Export image")),
                                                           tabPanel("Scatter Plot",
                                                                   plotOutput("TN.scatter", height = "400px", width = "400px"),
                                                                   radioButtons(inputId="saveFormatTN.scatter", label="Format", choices=list("png", "pdf")),
-                                                                  downloadButton("exportImageTN.scatter", label="Export image")),
+                                                                  downloadButtonKB("exportImageTN.scatter", label="Export image")),
                                                           tabPanel("Density Plot",
                                                                   plotOutput("TN.density", height = "400px", width = "400px"),
                                                                   radioButtons(inputId="saveFormatTN.density", label="Format", choices=list("png", "pdf")),
-                                                                  downloadButton(outputId="exportImageTN.density", label="Export image")))),
+                                                                  downloadButtonKB(outputId="exportImageTN.density", label="Export image")))),
                                     column(4, wellPanel(htmlOutput("TN.ttest")))),
                             h3("Matched tumour-normal TCGA RNA-seq FPKM-UQ data"),
                             DT::dataTableOutput("TN.dataTable")))),
@@ -189,7 +203,7 @@ ui <- navbarPage(
                                                               tabPanel("Scatter Correlation Plot",
                                                                       plotOutput("TT.scatter.cor", height = "400px", width = "400px"),
                                                                       radioButtons(inputId="saveFormatTT.scatter.cor", label="Format", choices=list("png", "pdf")),
-                                                                      downloadButton(outputId="exportImageTT.scatter.cor", label="Export image")))),
+                                                                      downloadButtonKB(outputId="exportImageTT.scatter.cor", label="Export image")))),
                                 column(4, wellPanel(htmlOutput("TT.cortest")))),
                       h3("Tumour TCGA RNA-seq FPKM-UQ data"),
                       DT::dataTableOutput("TT.dataTable")))),
@@ -636,6 +650,7 @@ server <- function(input, output, session)
                                                        ggsave(file, plot=plotTT.scatter.cor(), device="png")
                                                      }
                                                    })
+  
 }
 
 # Run the application 
