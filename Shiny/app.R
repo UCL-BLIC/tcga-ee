@@ -478,18 +478,26 @@ server <- function(input, output, session)
       # Record the number of complete cases
       n.complete.obs <- nrow(data[complete.cases(data$Tumour, data$Normal),])
 
+      # Fold differences
+      linearFC <- median(data$Tumour / data$Normal, na.rm=TRUE)
+      linearFC.max <- max(data$Tumour / data$Normal, na.rm=TRUE)
+      linearFC.min <- min(data$Tumour / data$Normal, na.rm=TRUE)
+
       options(scipen=999)
 
       out <- c("<p align='left'><b>One-sample student's t-test</b></p>\n",
-              "<p><i>Is mean difference not equal to 0?</i></p>\n",
-              paste0("<p>&nbsp;&nbsp;&nbsp;Estimated mean: ", round(t$estimate, 3), "</p>\n"),
+              "<p><i>Null: mean difference equals 0</i></p>\n",
+              paste0("<p>&nbsp;&nbsp;&nbsp;Estimated mean difference: ", round(t$estimate, 3), "</p>\n"),
               paste0("<p>&nbsp;&nbsp;&nbsp;95% CI: ", round(t$conf.int[1], 3), ", ", round(t$conf.int[2], 3), "</p>\n"),
               paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(t$p.value, 3), "</p>\n"))
       out <- c(out, "<p><hr></p>\n")
       out <- c(out, "<p align='left'><b>Wilcoxon signed rank test</b></p>\n",
-               paste0("<p>&nbsp;&nbsp;&nbsp;Estimated location parameter: ", round(wt$estimate, 3), "</p>\n"),
+               paste0("<p>&nbsp;&nbsp;&nbsp;Estimated median: ", round(wt$estimate, 3), "</p>\n"),
                paste0("<p>&nbsp;&nbsp;&nbsp;95% CI: ", round(wt$conf.int[1], 3), ", ", round(wt$conf.int[2], 3), "</p>\n"),
                paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(wt$p.value, 3), "</p>\n"))
+      out <- c(out, "<p><hr></p>\n")
+      out <- c(out, "<p align='left'><b>Fold differences</b></p>\n",
+               paste0("<p>&nbsp;&nbsp;&nbsp;Median fold change (min, max): ", round(linearFC, 3), " (", round(linearFC.min, 3), ", ", round(linearFC.max, 3), ")</p>\n"))
       out <- c(out, "<p><hr></p>\n")
       out <- c(out, paste0("<p>Number of complete non-zero observatons = ", n.complete.obs, "</p>\n"))
       out <- c(out, "<p>----------------------</p>")
