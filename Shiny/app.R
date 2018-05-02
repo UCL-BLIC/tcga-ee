@@ -479,9 +479,17 @@ server <- function(input, output, session)
       n.complete.obs <- nrow(data[complete.cases(data$Tumour, data$Normal),])
 
       # Fold differences
-      linearFC <- median(data$Tumour / data$Normal, na.rm=TRUE)
-      linearFC.max <- max(data$Tumour / data$Normal, na.rm=TRUE)
-      linearFC.min <- min(data$Tumour / data$Normal, na.rm=TRUE)
+      linearFC <- log2(mean(data$Tumour / data$Normal, na.rm=TRUE))
+      linearFC.max <- log2(max(data$Tumour / data$Normal, na.rm=TRUE))
+      linearFC.min <- log2(min(data$Tumour / data$Normal, na.rm=TRUE))
+
+      # Convert the FPKM-UQ data to the Z scale, and then calculate fold changes
+      #require(zFPKM)
+      #data.z <- zFPKM(data[,c("Tumour","Normal")])
+      #print(data.z)
+      #zFC <- mean(data.z$Tumour - data.z$Normal, na.rm=TRUE)
+      #zFC.max <- max(data.z$Tumour - data.z$Normal, na.rm=TRUE)
+      #zFC.min <- min(data.z$Tumour - data.z$Normal, na.rm=TRUE)
 
       options(scipen=999)
 
@@ -492,12 +500,20 @@ server <- function(input, output, session)
               paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(t$p.value, 3), "</p>\n"))
       out <- c(out, "<p><hr></p>\n")
       out <- c(out, "<p align='left'><b>Wilcoxon signed rank test</b></p>\n",
-               paste0("<p>&nbsp;&nbsp;&nbsp;Estimated median: ", round(wt$estimate, 3), "</p>\n"),
+               paste0("<p>&nbsp;&nbsp;&nbsp;Estimated median difference: ", round(wt$estimate, 3), "</p>\n"),
                paste0("<p>&nbsp;&nbsp;&nbsp;95% CI: ", round(wt$conf.int[1], 3), ", ", round(wt$conf.int[2], 3), "</p>\n"),
                paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(wt$p.value, 3), "</p>\n"))
       out <- c(out, "<p><hr></p>\n")
-      out <- c(out, "<p align='left'><b>Fold differences</b></p>\n",
-               paste0("<p>&nbsp;&nbsp;&nbsp;Median fold change (min, max): ", round(linearFC, 3), " (", round(linearFC.min, 3), ", ", round(linearFC.max, 3), ")</p>\n"))
+      out <- c(out, "<p align='left'><b>Log2 fold difference:</b></p>\n",
+               paste0("<p>&nbsp;&nbsp;&nbsp;Mean: ", round(linearFC, 3), "</p>\n"),
+               paste0("<p>&nbsp;&nbsp;&nbsp;Min: ", round(linearFC.min, 3), "</p>\n"),
+               paste0("<p>&nbsp;&nbsp;&nbsp;Max: ", round(linearFC.max, 3), "</p>\n"))
+      #out <- c(out, "<p><hr></p>\n")
+      #out <- c(out, "<p align='left'><b>Z-score (standard deviation) difference:</b></p>\n",
+      #         paste0("<p>&nbsp;&nbsp;&nbsp;Mean: ", round(zFC, 3), "</p>\n"),
+      #         paste0("<p>&nbsp;&nbsp;&nbsp;Min: ", round(zFC.min, 3), "</p>\n"),
+      #         paste0("<p>&nbsp;&nbsp;&nbsp;Max: ", round(zFC.max, 3), "</p>\n"),
+      #         paste0("<p>&nbsp;&nbsp;&nbsp;<i>*after Z-scale transformation</i></p>\n"))
       out <- c(out, "<p><hr></p>\n")
       out <- c(out, paste0("<p>Number of complete non-zero observatons = ", n.complete.obs, "</p>\n"))
       out <- c(out, "<p>----------------------</p>")
