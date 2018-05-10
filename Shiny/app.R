@@ -480,10 +480,13 @@ server <- function(input, output, session)
 
       # Convert the FPKM-UQ data to the Z scale, and then calculate fold changes
       require(zFPKM)
-      data.z <- zFPKM(data[,c("Tumour", "Normal")])
-      FC <- data.z$Tumour / data.z$Normal
+      data.z <- data.frame(scale(zFPKM(data[,c("Tumour", "Normal")]), center=FALSE, scale=TRUE))
+      FC <- apply(data.z[c("Tumour","Normal")], 1, function(x) if (x[1]>0 && x[2]<0) {(x[1]-(x[2])) / -x[2]} else if (x[1]<0 && x[2]>0) {(x[1]-(x[2])) / x[2]} else if (x[1]<0 && x[2]<0 && x[1]>x[2]) {abs(x[2])/abs(x[1])} else if (x[1]<0 && x[2]<0 && x[1]<x[2]) {-1*(abs(x[1])/abs(x[2]))} else {x[1]/x[2]})
+      FC.diff <- apply(data.z[c("Tumour","Normal")], 1, function(x) if (x[1]>0 && x[2]<0) {x[1]-x[2]} else if (x[1]<0 && x[2]>0) {x[1]-x[2]} else if (x[1]<0 && x[2]<0 && x[1]>x[2]) {abs(x[1]) - abs(x[2])} else if (x[1]<0 && x[2]<0 && x[1]<x[2]) {x[2] - x[1]} else {x[1] - x[2]})
       zFC.mean <- mean(FC, na.rm=TRUE)
-      zFC.mean.LessMin <- mean(FC[-c(which(FC==min(FC, na.rm=TRUE)))], na.rm=TRUE)
+      zFC.median <- median(FC, na.rm=TRUE)
+      zFC.max <- max(FC, na.rm=TRUE)
+      zFC.min <- min(FC, na.rm=TRUE)
 
       options(scipen=999)
 
@@ -498,10 +501,12 @@ server <- function(input, output, session)
                paste0("<p>&nbsp;&nbsp;&nbsp;95% CI: ", round(wt$conf.int[1], 3), ", ", round(wt$conf.int[2], 3), "</p>\n"),
                paste0("<p>&nbsp;&nbsp;&nbsp;p-value: ", signif(wt$p.value, 3), "</p>\n"))
       out <- c(out, "<p><hr></p>\n")
-      out <- c(out, "<p align='left'><b>Fold difference:</b></p>\n",
-               paste0("<p>&nbsp;&nbsp;&nbsp;Mean : ", round(zFC.mean, 3), "</p>\n"),
-               paste0("<p>&nbsp;&nbsp;&nbsp;Mean (less lowest outlying): ", round(zFC.mean.LessMin, 3), "</p>\n"),
-               paste0("<p>&nbsp;&nbsp;&nbsp;<i>*after Z-scale transformation</i></p>\n"))
+      out <- c(out, "<p align='left'><b>Effect size estimates:</b></p>\n",
+               paste0("<p>&nbsp;&nbsp;&nbsp;Mean ratio: ", round(zFC.mean, 3), "</p>\n"),
+               paste0("<p>&nbsp;&nbsp;&nbsp;Median ratio: ", round(zFC.median, 3), "</p>\n"),
+               paste0("<p>&nbsp;&nbsp;&nbsp;Min ratio: ", round(zFC.min, 3), "</p>\n"),
+               paste0("<p>&nbsp;&nbsp;&nbsp;Max ratio: ", round(zFC.max, 3), "</p>\n"),
+               paste0("<p>&nbsp;&nbsp;&nbsp;<i>*after Z-score standardisation</i></p>\n"))
       out <- c(out, "<p><hr></p>\n")
       out <- c(out, paste0("<p>Number of complete non-zero observatons = ", n.complete.obs, "</p>\n"))
       out <- c(out, "<p>----------------------</p>")
