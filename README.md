@@ -15,22 +15,21 @@ This app loads the TCGA expression data in memory and allows the user to explore
 
 1. Clone the repository on your local machine and open the code with RStudio.
 2. Create a data/ folder
-3. Download the data following the instruction below
-4. Open the Shiny/app.R file and click on "Run App".
+3. Obtain necessary data frm BLIC
+4. Open the Shiny/app.R file
+5. Install necessary packages
+6. Run app by clicking on "Run App"
 
 ## Data
 
-Data need to be downloaded from the [UCSC Xena browser](http://xena.ucsc.edu). Please download all these files into a folder call data.
+Originally, FPKM-UQ data from [UCSC Xena browser](http://xena.ucsc.edu) was used; however, raw RSEM gene-summarised counts were then obtained from the [GDC Legacy Archive](https://portal.gdc.cancer.gov/legacy-archive) and re-processd at BLIC. New data files are available by request to Javier Herrero or Kevin Blighe.
 
-This file contains the annotation for all the genes (with Ensembl IDs) included in the data files:
+## Appendix
+
+Original FPKM-UQ data used:
 
 ```bash
 wget -N https://gdc.xenahubs.net/download/probeMaps/gencode.v22.annotation.gene.probeMap.gz
-```
-
-Here is the list of data files to download:
-
-```bash
 wget -N https://gdc.xenahubs.net/download/probeMaps/gencode.v22.annotation.gene.probeMap.gz
 wget -N https://gdc.xenahubs.net/download/TCGA-LAML/Xena_Matrices/TCGA-LAML.htseq_fpkm-uq.tsv.gz
 wget -N https://gdc.xenahubs.net/download/TCGA-ACC/Xena_Matrices/TCGA-ACC.htseq_fpkm-uq.tsv.gz
