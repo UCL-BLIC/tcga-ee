@@ -22,7 +22,7 @@ This app loads the TCGA expression data in memory and allows the user to explore
 
 ## Data
 
-Originally, FPKM-UQ data from [UCSC Xena browser](http://xena.ucsc.edu) was used; however, raw RSEM gene-summarised counts were then obtained from the [GDC Legacy Archive](https://portal.gdc.cancer.gov/legacy-archive) and re-processd at BLIC. New data files are available by request to Javier Herrero or Kevin Blighe.
+Originally, FPKM-UQ data from [UCSC Xena browser](http://xena.ucsc.edu) (see Appendix) was used; however, raw RSEM gene-summarised counts were then obtained from the [GDC Legacy Archive](https://portal.gdc.cancer.gov/legacy-archive) and re-processd at BLIC. New data files are available by request to Javier Herrero or Kevin Blighe.
 
 <hr>
 
