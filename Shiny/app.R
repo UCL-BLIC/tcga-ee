@@ -612,14 +612,14 @@ server <- function(input, output, session)
     })
   
   # Create handlers for saving the plots
-  output$exportImageTN.parallel.png <- downloadHandler(filename=function(){paste("Scatter", input$saveFormatTN.scatter, sep=".")},
+  output$exportImageTN.parallel.png <- downloadHandler(filename=function(){paste("Parallel", input$saveFormatTN.parallel, sep=".")},
                                                        content=function(file)
                                                        {
-                                                         if (input$saveFormatTN.scatter=="pdf")
+                                                         if (input$saveFormatTN.parallel=="pdf")
                                                          {
-                                                           ggsave(file, plot=plotTN.scatter(), device="pdf")
-                                                         } else if (input$saveFormatTN.scatter=="png") {
-                                                           ggsave(file, plot=plotTN.scatter(), device="png")
+                                                           ggsave(file, plot=plotTN.parallel(), device="pdf")
+                                                         } else if (input$saveFormatTN.parallel=="png") {
+                                                           ggsave(file, plot=plotTN.parallel(), device="png")
                                                          }
                                                        })
   output$exportImageTN.scatter.png <- downloadHandler(filename=function(){paste("Scatter", input$saveFormatTN.scatter, sep=".")},
