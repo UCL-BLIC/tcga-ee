@@ -25,7 +25,7 @@ library(tidyr)
   {
     genes <- fread(paste0(data.dir, "gencode.v22.annotation.gene.probeMap"), header = T, data.table = T)
   } else if (file.exists(paste0(data.dir, "gencode.v22.annotation.gene.probeMap.gz"))) {
-    genes <- fread(paste0("gunzip -c ", data.dir, "gencode.v22.annotation.gene.probeMap.gz"), header = T, data.table = T)
+    genes <- fread(cmd = paste0("gunzip -c ", data.dir, "gencode.v22.annotation.gene.probeMap.gz"), header = T, data.table = T)
   } else {
     stop("Cannot find gencode annotation file")
   }
@@ -57,7 +57,7 @@ read_data <- function(session, data.dir)
     # Check if the compressed (g-zipped) version of the file is there for reading; if not, assume uncompressed as TSV
     if (grepl(".gz$", this.file, perl = T))
     {
-      data <- fread(paste0("gunzip -c ", data.dir, "/", this.file), header = T, data.table = F)
+      data <- fread(cmd = paste0("gunzip -c ", data.dir, "/", this.file), header = T, data.table = F)
     }
     else
     {
